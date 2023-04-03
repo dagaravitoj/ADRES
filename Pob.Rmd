@@ -1,0 +1,76 @@
+---
+title: "Poblacion"
+output: html_document
+date: "2023-02-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fuente
+https://www.dane.gov.co/index.php/estadisticas-por-tema/demografia-y-poblacion/proyecciones-de-poblacion.
+
+se concatenan los datos para tener series históricas
+
+
+```{r cars}
+
+library(readxl)
+library(plyr)
+
+pob_27_35<-read_excel("G:/Unidades compartidas/0. Salud/Pob/anexo-proyecciones-poblacion-Municipal_2027-2035.xlsx")
+pob_18_26<-read_excel("G:/Unidades compartidas/0. Salud/Pob/anexo-proyecciones-poblacion-Municipal_2018-2026.xlsx")
+pob_05_17<-read_excel("G:/Unidades compartidas/0. Salud/Pob/anexo-area-sexo-edad-proyecciones-poblacion-Municipal_2005-2017.xlsx")
+pob_95_04<-read_excel("G:/Unidades compartidas/0. Salud/Pob/anexo-area-sexo-edad-proyecciones-poblacion-Municipal_1995-2004.xlsx")
+pob_85_94<-read_excel("G:/Unidades compartidas/0. Salud/Pob/anexo-area-sexo-edad-proyecciones-poblacion-Municipal_1985-1994.xlsx")
+
+names(pob_05_17)[names(pob_05_17)=="Total General"]<-"Total"
+names(pob_18_26)[names(pob_18_26)=="Total General"]<-"Total"
+names(pob_27_35)[names(pob_27_35)=="Total General"]<-"Total"
+names(pob_85_94)[names(pob_85_94)=="Total General"]<-"Total"
+names(pob_95_04)[names(pob_95_04)=="Total General"]<-"Total"
+
+pob<-rbind.fill(pob_27_35,pob_18_26,pob_05_17,pob_95_04,pob_85_94)
+
+names(pob)[names(pob)=="ÁREA GEOGRÁFICA"]<-"ÁREA.GEOGRÁFICA"
+
+table(pob$AÑO)
+write.csv(pob,"G:/Unidades compartidas/0. Salud/Pob/pob_85_35_mpio.csv")
+
+pob_TB<-pob[pob[,"ÁREA GEOGRÁFICA"]=='Total' ,c("DP","DPNOM","DPMP","MPIO","AÑO","Total")]
+write.csv(pob_TB,"G:/Unidades compartidas/0. Salud/Pob/pob_TB_85_35_mpio.csv",row.names = FALSE)
+
+
+names(pob)[!names(names(pob))%in%names(pob_95_04)]
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+
+library(tidyr)
+library(dplyr)
+
+
+datos_dane_long <- pob %>%
+  filter(AÑO >= 2018 & AÑO <= 2022) %>%
+  select(DP, DPNOM, DPMP, MPIO, AÑO, ÁREA.GEOGRÁFICA, starts_with("Hombres_"), starts_with("Mujeres_"), starts_with("Total_")) %>%
+  pivot_longer(cols = starts_with("Hombres_"), names_to = "edad", names_prefix = "Hombres_", values_to = "hombres") %>%
+  pivot_longer(cols = starts_with("Mujeres_"), names_to = "edad", names_prefix = "Mujeres_", values_to = "mujeres") %>%
+  pivot_longer(cols = starts_with("Total_"), names_to = "edad", names_prefix = "Total_", values_to = "total") %>%
+  mutate(edad = gsub("\\D+", "", edad),
+         sexo = ifelse(grepl("Hombres", edad), "Hombres", "Mujeres"),
+         edad = gsub("[.].*", "+", edad),
+         edad = paste0("[", edad, ")") )
+
+
+              
+              
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
